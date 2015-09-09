@@ -38,7 +38,7 @@ namespace HybridDb.Config
         public bool RunDocumentMigrationsOnStartup { get; private set; }
         public int ConfiguredVersion { get; private set; }
         public string TableNamePrefix { get; private set; }
-
+        public bool TableMetaDataEnabled { get; private set; }
         internal ConcurrentDictionary<string, Table> Tables { get; private set; }
         internal List<DocumentDesign> DocumentDesigns { get; private set; }
 
@@ -151,6 +151,10 @@ namespace HybridDb.Config
             TableNamePrefix = prefix;
         }
 
+        public void UseTableMetaData(bool use=false)
+        {
+            TableMetaDataEnabled = use;
+        }
         internal void DisableMigrationsOnStartup()
         {
             RunSchemaMigrationsOnStartup = false;

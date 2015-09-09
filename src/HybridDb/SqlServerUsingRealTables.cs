@@ -4,18 +4,24 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Transactions;
 using HybridDb.Config;
+using HybridDb.Migrations.Commands;
 using Serilog;
 
 namespace HybridDb
 {
     public class SqlServerUsingRealTables : SqlServer
     {
+        readonly bool useTableMetaData;
+
         readonly string prefix;
 
         int numberOfManagedConnections;
-
-        public SqlServerUsingRealTables(ILogger logger, string connectionString, string prefix) : base(logger, connectionString)
+        
+        public SqlServerUsingRealTables(ILogger logger, string connectionString, string prefix, bool useTableMetaData)
+            : base(logger, connectionString)
         {
+            this.useTableMetaData = useTableMetaData;
+
             this.prefix = prefix ?? "";
         }
 
@@ -62,12 +68,24 @@ namespace HybridDb
         public override Dictionary<string, Table> QuerySchema()
         {
             var schema = new Dictionary<string, Table>();
+            IEnumerable<string> tables;
+            if (useTableMetaData)
+            {
+                tables = RawQuery<string>(string.Format(
+                  "SELECT u.name + '.' + t.name AS Name FROM  sysobjects t INNER JOIN  sysusers u ON u.uid = t.uid LEFT OUTER JOIN sys.extended_properties td ON td.major_id = t.id AND td.minor_id = 0 AND td.name = 'MS_Description' WHERE t.type = 'u' and td.value ='" + CreateTable.TableMetaData + "' and t.name LIKE '{0}%'",
+                 prefix))
+                 .ToList();
+            }
+            else
+            {
+                tables = RawQuery<string>(string.Format(
+                   "select table_name from information_schema.tables where table_type='BASE TABLE' and table_name LIKE '{0}%'",
+                   prefix))
+                   .ToList();
+            }
+            //    "SELECT u.name + '.' + t.name AS Name FROM  sysobjects t INNER JOIN  sysusers u ON u.uid = t.uid LEFT OUTER JOIN sys.extended_properties td ON td.major_id = t.id AND td.minor_id = 0 AND td.name = 'MS_Description' WHERE t.type = 'u' and td.value ='HybridDb' and t.name LIKE '{0}%'",
 
-            var tables = RawQuery<string>(string.Format(
-                "select table_name from information_schema.tables where table_type='BASE TABLE' and table_name LIKE '{0}%'", 
-                prefix))
-                .ToList();
-            
+
             foreach (var tableName in tables)
             {
                 var columns = RawQuery<QueryColumn>(string.Format("select * from sys.columns where Object_ID = Object_ID(N'{0}')", tableName));
@@ -79,7 +97,7 @@ namespace HybridDb
 
             return schema;
         }
-        
+
         public override void Dispose()
         {
             if (numberOfManagedConnections > 0)

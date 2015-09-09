@@ -30,7 +30,7 @@ namespace HybridDb
         {
             configurator = configurator ?? new NullHybridDbConfigurator();
             var configuration = configurator.Configure();
-            var database = new SqlServerUsingRealTables(configuration.Logger, connectionString, configuration.TableNamePrefix);
+            var database = new SqlServerUsingRealTables(configuration.Logger, connectionString, configuration.TableNamePrefix, configuration.TableMetaDataEnabled);
             var store = new DocumentStore(database, configuration);
             new SchemaMigrationRunner(store, new SchemaDiffer()).Run();
             new DocumentMigrationRunner(store).RunInBackground();
@@ -52,7 +52,7 @@ namespace HybridDb
             switch (mode)
             {
                 case TableMode.UseRealTables:
-                    database = new SqlServerUsingRealTables(configuration.Logger, resultingConnectionString, configuration.TableNamePrefix);
+                    database = new SqlServerUsingRealTables(configuration.Logger, resultingConnectionString, configuration.TableNamePrefix,configuration.TableMetaDataEnabled);
                     break;
                 case TableMode.UseTempTables:
                     database = new SqlServerUsingTempTables(configuration.Logger, resultingConnectionString);

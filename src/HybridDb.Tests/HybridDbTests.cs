@@ -63,7 +63,7 @@ namespace HybridDb.Tests
             database = Using(new SqlServerUsingTempDb(logger, connectionString, sessionKey));
         }
 
-        protected void UseRealTables(string prefix = null)
+        protected void UseRealTables(string prefix = null,bool useTableMetadata= false)
         {
             var uniqueDbName = "HybridDbTests_" + Guid.NewGuid().ToString().Replace("-", "_");
             using (var connection = new SqlConnection("data source=.;Integrated Security=True;Pooling=false"))
@@ -79,7 +79,7 @@ namespace HybridDb.Tests
 
             connectionString = "data source=.;Integrated Security=True;Initial Catalog=" + uniqueDbName;
 
-            database = Using(new SqlServerUsingRealTables(logger, connectionString, prefix));
+            database = Using(new SqlServerUsingRealTables(logger, connectionString, prefix, useTableMetadata));
 
             disposables.Add(() =>
             {

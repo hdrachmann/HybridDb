@@ -2,6 +2,7 @@
 using HybridDb.Config;
 using HybridDb.Migrations.Commands;
 using Shouldly;
+using Xunit;
 using Xunit.Extensions;
 
 namespace HybridDb.Tests
@@ -187,6 +188,37 @@ namespace HybridDb.Tests
             schema["Entities1"]["SomeTrueBool"].DefaultValue.ShouldBe(true);
         }
 
+
+
+
+        [Fact]
+        public void CanFindOnlyHybridDbInADatabaseWithOtherTablesWithoutPrefix()
+        {
+            UseRealTables(useTableMetadata: true);
+            database.RawExecute("Create table NotAHybridDBTable(" +
+                                    "Id int not null identity," +
+                                    "Name varchar(100) not null" +
+                                ")");
+
+
+            new CreateTable(new Table("Entities1", new Column("test", typeof(int)))).Execute(database);
+            new CreateTable(new Table("Entities2", new Column("test", typeof(int)))).Execute(database);
+
+            var schema = database.QuerySchema();
+
+            schema["Entities1"].ShouldNotBe(null);
+            schema["Entities1"].Name.ShouldBe("Entities1");
+            schema["Entities2"].ShouldNotBe(null);
+            schema["Entities2"].Name.ShouldBe("Entities2");
+
+            schema.ContainsKey("NotAHybridDBTable").ShouldBe(false);
+
+
+            //if (database is SqlServerUsingRealTables)
+            //{
+            //    database.RawExecute("EXEC   sp_addextendedproperty  'MS_Description', '" + TableMetaData + "', 'user', dbo, 'table', '" + Table.Name + "'");
+            //}
+        }
         enum SomeEnum
         {
             SomeValue,
